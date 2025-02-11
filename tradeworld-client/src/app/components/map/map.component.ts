@@ -13,16 +13,18 @@ export class MapComponent {
   private ctx!: CanvasRenderingContext2D;
   private dragStart: { x: number, y: number } | null = null;
   private mapOffset: { x: number, y: number } = { x: -1100, y: 300 };
+  private redrawRequested: number|null = null;
   
   constructor() {
     effect(() => {
-      this.drawMap();
+      this.map();
+      this.requestRedraw();
     });
   }
 
   ngAfterViewInit(): void {
     this.ctx = this.mapCanvas.nativeElement.getContext('2d')!;
-    this.drawMap();
+    this.requestRedraw();
   }
 
   onMapMouseDown(event: MouseEvent) {
@@ -35,11 +37,19 @@ export class MapComponent {
       this.dragStart = { x: event.clientX, y: event.clientY };
       this.mapOffset.x += dx;
       this.mapOffset.y += dy;
-      this.drawMap();
+      this.requestRedraw();
     }
   }
   onMapMouseUp(event: MouseEvent) {
     this.dragStart = null;
+  }
+
+  requestRedraw() {
+    if (this.redrawRequested !== null) return;
+    this.redrawRequested = window.requestAnimationFrame(() => {
+      this.redrawRequested = null;
+      this.drawMap();
+    });
   }
 
   drawMap() {
