@@ -1,0 +1,3 @@
+<app-map [map]="map"></app-map>
+<button (click)="fetchRandomMap()">Random Map</button>
+<input type="number" [(ngModel)]="seed" (ngModelChange)="fetchMap()"/>
