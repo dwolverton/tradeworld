@@ -12,7 +12,7 @@ public class MapApiController {
 
     @GetMapping("/generate-map")
     public WorldMap generateMap(@RequestParam int width, @RequestParam int height, @RequestParam(required = false) Long seed) {
-        return new MapGenerator().generateMap(width, height, seed);
+        return new MapGenerator(width, height, seed).generateMap();
     }
     
 }
