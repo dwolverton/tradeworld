@@ -1,5 +1,6 @@
 import { Component, effect, ElementRef, input, ViewChild } from '@angular/core';
-import { WorldMap } from '../../model/world-map';
+import { MapCell, WorldMap } from '../../model/world-map';
+import { KeyValuePipe } from '@angular/common';
 
 @Component({
   selector: 'app-map',
@@ -9,6 +10,7 @@ import { WorldMap } from '../../model/world-map';
 })
 export class MapComponent {
   map = input(new WorldMap(0, 0, []));
+  mapType = input({attribute: 'type', min: 0, max: 0});
   @ViewChild('mapCanvas') mapCanvas!: ElementRef<HTMLCanvasElement>;
   private ctx!: CanvasRenderingContext2D;
   private dragStart: { x: number, y: number } | null = null;
@@ -18,6 +20,7 @@ export class MapComponent {
   constructor() {
     effect(() => {
       this.map();
+      this.mapType();
       this.requestRedraw();
     });
   }
@@ -39,6 +42,10 @@ export class MapComponent {
       this.mapOffset.y += dy;
       this.requestRedraw();
     }
+    
+    // const coords = this.mapCoordinateLookup(event.offsetX, event.offsetY);
+    // const cell = this.map().getCell(coords.x, coords.y);
+    // console.log(coords, cell);
   }
   onMapMouseUp(event: MouseEvent) {
     this.dragStart = null;
@@ -84,7 +91,7 @@ export class MapComponent {
       xStart = Math.max(xStart, 0)
 
       for (let x = xEnd; x >= xStart; x--) {
-        const cell = map.getCell(x, y);
+        const cell = map.getCell(x, y)!;
         const baseOffsetX = MAP_OFFSET + (x + y) * CELL_SIZE_X / 2 + this.mapOffset.x;
         const baseOffsetY = MAP_OFFSET + (y - x) * CELL_SIZE_Y / 2 + this.mapOffset.y;
 
@@ -98,7 +105,7 @@ export class MapComponent {
         ctx.lineTo(se.x, se.y);
         ctx.lineTo(sw.x, sw.y);
         ctx.lineTo(nw.x, nw.y);
-        ctx.fillStyle = getColorForType(cell.type);
+        ctx.fillStyle = this.getColorForCell(cell);
         ctx.fill();
         ctx.strokeStyle = '#444';
         ctx.stroke();
@@ -110,18 +117,46 @@ export class MapComponent {
     ctx.strokeRect(MAP_OFFSET, MAP_OFFSET, this.mapCanvas.nativeElement.width - 2 * MAP_OFFSET, this.mapCanvas.nativeElement.height - 2 * MAP_OFFSET);
 
   }
+
+  getColorForCell(cell: MapCell): string {
+    const mapType = this.mapType();
+    if (mapType.attribute === 'type') {
+      return getColorForType(cell.type);
+    } else {
+      let val = (cell as any)[mapType.attribute];
+      val = (val - mapType.min) / (mapType.max - mapType.min);
+      var h = (1.0 - val) * 240
+      return "hsl(" + h + ", 100%, 50%)";
+    }
+  }
+
+  mapCoordinateLookup(pointerX: number, pointerY: number): { x: number, y: number } {
+    const map = this.map();
+    const CELL_SIZE_X = 32;
+    const CELL_SIZE_Y = 16;
+    const HEIGHT_SIZE = 4;
+    pointerX -= this.mapOffset.x;
+    pointerY -= this.mapOffset.y + CELL_SIZE_Y / 2;
+
+    const x = Math.floor((pointerX / CELL_SIZE_X - pointerY / CELL_SIZE_Y));
+    const y = Math.floor((pointerY / CELL_SIZE_Y + pointerX / CELL_SIZE_X));
+
+    return { x, y };
+  }
 }
 
 function getColorForType(type: string):string {
   switch (type) {
     case 'grass':
+      return '#7e9557';
+    case 'forest':
       return '#449e2c';
     case 'water':
       return '#126e94';
     case 'dirt':
       return '#814e21';
     case 'desert':
-      return '#f4a258';
+      return '#efd092';
     case 'snow':
       return '#e4e8e7';
     default:

@@ -1,3 +1,8 @@
-<app-map [map]="map"></app-map>
+<app-map [map]="map" [mapType]="mapTypeOptions[mapType]"></app-map>
 <button (click)="fetchRandomMap()">Random Map</button>
 <input type="number" [(ngModel)]="seed" (ngModelChange)="fetchMap()"/>
+<button (click)="fetchMap()">Refresh Map</button>
+<select [(ngModel)]="mapType">
+    @for (option of mapTypeOptions|keyvalue; track option.key) {
+        <option [value]="option.key">{{option.key}}</option>
+    }
